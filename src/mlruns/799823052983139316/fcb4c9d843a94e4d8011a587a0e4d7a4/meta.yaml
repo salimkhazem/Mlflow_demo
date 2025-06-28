@@ -1,0 +1,14 @@
+artifact_uri: file:///Users/salimkhazem/workspace/mlflow_mnist_2/src/mlruns/799823052983139316/fcb4c9d843a94e4d8011a587a0e4d7a4/artifacts
+end_time: 1751108134480
+entry_point_name: ''
+experiment_id: '799823052983139316'
+lifecycle_stage: active
+run_id: fcb4c9d843a94e4d8011a587a0e4d7a4
+run_name: resilient-owl-983
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1751108122526
+status: 3
+tags: []
+user_id: salimkhazem

@@ -1,0 +1,10 @@
+artifact_location: file:///Users/salimkhazem/workspace/mlflow_mnist_2/src/mlruns/799823052983139316/models/m-639b0625a70f43c8bcf1ea72300d637c/artifacts
+creation_timestamp: 1751108132062
+experiment_id: '799823052983139316'
+last_updated_timestamp: 1751108134472
+model_id: m-639b0625a70f43c8bcf1ea72300d637c
+model_type: null
+name: model
+source_run_id: fcb4c9d843a94e4d8011a587a0e4d7a4
+status: 2
+status_message: null

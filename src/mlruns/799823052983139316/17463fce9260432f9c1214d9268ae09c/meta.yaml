@@ -1,0 +1,14 @@
+artifact_uri: file:///Users/salimkhazem/workspace/mlflow_mnist_2/src/mlruns/799823052983139316/17463fce9260432f9c1214d9268ae09c/artifacts
+end_time: 1751108499289
+entry_point_name: ''
+experiment_id: '799823052983139316'
+lifecycle_stage: active
+run_id: 17463fce9260432f9c1214d9268ae09c
+run_name: bustling-ray-556
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1751108465878
+status: 3
+tags: []
+user_id: salimkhazem
