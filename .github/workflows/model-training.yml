@@ -1,0 +1,151 @@
+name: Model Training Pipeline
+
+on:
+  push:
+    branches: [ main ]
+    paths: 
+      - 'src/**'
+      - 'requirements.txt'
+  schedule:
+    # Run weekly on Sundays at 2 AM UTC
+    - cron: '0 2 * * 0'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Training environment'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+        - dev
+        - prod
+      model_type:
+        description: 'Model type to train'
+        required: true
+        default: 'simple'
+        type: choice
+        options:
+        - simple
+        - conv
+      epochs:
+        description: 'Number of training epochs'
+        required: false
+        default: '5'
+        type: string
+
+env:
+  MLFLOW_TRACKING_URI: ${{ secrets.MLFLOW_TRACKING_URI }}
+  NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
+
+jobs:
+  train-model:
+    runs-on: ubuntu-latest
+    name: Train MNIST Model
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+        
+    - name: Cache pip dependencies
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+        
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        
+    - name: Set up MLflow tracking
+      run: |
+        echo "Setting up MLflow tracking..."
+        export MLFLOW_TRACKING_URI=${{ env.MLFLOW_TRACKING_URI }}
+        
+    - name: Download and cache MNIST data
+      run: |
+        python -c "
+        from torchvision import datasets, transforms
+        transform = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))])
+        datasets.MNIST('./data', train=True, download=True, transform=transform)
+        datasets.MNIST('./data', train=False, download=True, transform=transform)
+        echo '✅ MNIST data cached'
+        "
+        
+    - name: Train model
+      run: |
+        python src/main.py \
+          --env ${{ github.event.inputs.environment || 'dev' }} \
+          --model-type ${{ github.event.inputs.model_type || 'simple' }} \
+          --epochs ${{ github.event.inputs.epochs || '5' }} \
+          --no-mlflow
+          
+    - name: Run model validation
+      run: |
+        python scripts/validate_model.py \
+          --model-path ./best_models/ \
+          --threshold 90.0
+          
+    - name: Generate model report
+      run: |
+        python scripts/generate_report.py \
+          --experiment-name "MNIST_CI_Training" \
+          --output-file model_report.html
+          
+    - name: Upload training artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: training-artifacts-${{ github.sha }}
+        path: |
+          best_models/
+          model_report.html
+          *.png
+        retention-days: 30
+        
+    - name: Upload model to MLflow
+      if: github.ref == 'refs/heads/main'
+      run: |
+        python scripts/upload_to_registry.py \
+          --model-path ./best_models/ \
+          --model-name "mnist-classifier" \
+          --stage "staging"
+
+  performance-test:
+    runs-on: ubuntu-latest
+    name: Model Performance Test
+    needs: train-model
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+        
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pytest-benchmark
+        
+    - name: Download training artifacts
+      uses: actions/download-artifact@v3
+      with:
+        name: training-artifacts-${{ github.sha }}
+        
+    - name: Run performance benchmarks
+      run: |
+        pytest tests/performance/ -v --benchmark-only --benchmark-json=benchmark.json
+        
+    - name: Upload benchmark results
+      uses: actions/upload-artifact@v3
+      with:
+        name: benchmark-results-${{ github.sha }}
+        path: benchmark.json 
