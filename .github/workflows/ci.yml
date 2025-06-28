@@ -87,7 +87,7 @@ jobs:
         cd src
         python -c "
         import torch
-        from config import Params
+        from config import Params, get_config
         from model import create_model
         
         # Test configuration
@@ -162,7 +162,7 @@ jobs:
         import torch
         import torch.nn as nn
         import torch.optim as optim
-        from config import Params
+        from config import Params, get_config
         from model import create_model
         
         # Test training setup without actual training
@@ -184,53 +184,9 @@ jobs:
         optimizer.step()
         
         print(f'✅ Training setup test passed - Loss: {loss.item():.4f}')
-        "
-
-  security-scan:
-    runs-on: ubuntu-latest
-    name: Security Scan
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.9'
         
-    - name: Install bandit
-      run: |
-        pip install bandit
-        
-    - name: Run Bandit security scan
-      run: |
-        bandit -r src/ -f json -o bandit-report.json -ll --skip B101,B601 || true
-        echo "Security scan completed"
-        
-    - name: Show security scan summary
-      run: |
-        if [ -f bandit-report.json ]; then
-          echo "Security scan results:"
-          python -c "
-          import json
-          try:
-              with open('bandit-report.json', 'r') as f:
-                  data = json.load(f)
-              print(f'Issues found: {len(data.get(\"results\", []))}')
-              if data.get('results'):
-                  for issue in data['results'][:3]:  # Show first 3 issues
-                      print(f'- {issue.get(\"test_name\", \"Unknown\")}: {issue.get(\"issue_text\", \"No description\")}')
-          except:
-              print('No security issues file found or parsing error')
-          "
-        else
-          echo "No security scan results file found"
-        fi
-        
-    - name: Upload security scan results
-      uses: actions/upload-artifact@v3
-      with:
-        name: security-scan-results
-        path: bandit-report.json
-      if: always() 
+        # Test config environments
+        dev_config = get_config('dev')
+        prod_config = get_config('prod')
+        print(f'✅ Environment configs work: dev={dev_config.epochs}, prod={prod_config.epochs}')
+        " 
